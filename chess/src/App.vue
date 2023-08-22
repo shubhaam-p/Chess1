@@ -1,6 +1,7 @@
 <script setup>
   import {onMounted, ref} from "vue"
   var place = ref(0);
+  var clickedPeice = ref(0);
   var countSteps = 0
   var currentPos = null;
   var currentEvent = null;
@@ -8,7 +9,8 @@
   var started = 0;
   var defaultPos = []
   var posInArr = []
-
+  var currentPos = []
+  
   const pawnMove=(currentPos, pos, selectedPiece)=>{
     let returnValue = true;
     let isDefaultPos = false;
@@ -26,71 +28,114 @@
     return returnValue
   }
 
-  const castleMove = (currentPos, pos, selectedPiece) =>{
-    console.log("castle",currentPos)
-    let row = parseInt(String(currentPos)[0])
-    let col = parseInt(String(currentPos)[1])
-    let colArr = []
-    let rowArr = []
-    console.log(currentPos , pos,currentPos > pos)
-    if(currentPos < pos){
-        for(let i=1;i<=8; i++){
-        let colCords = parseInt(String(row)+String(i));
-        let rowCords = parseInt(String(i)+String(col));
-        // console.log(place.value[ parseInt( posInArr[colCords] ) ].classList[3], typeof(place.value[ parseInt( posInArr[colCords] ) ].classList[3]) === 'undefined', place.value[ parseInt( posInArr[rowCords] ) ].classList[3], !colPieceBetween)
-        if(typeof(place.value[ parseInt( posInArr[colCords] ) ].classList[3]) === 'undefined'){
-          colArr.push(String(row)+String(i))
-          console.log(colCords)
-        }
+ function getAvailableMoves(currentPos, pos, piece){
+  if(parseInt(currentPos) < 11)
+    return
 
-        if(typeof(place.value[ parseInt( posInArr[rowCords] ) ].classList[3]) === 'undefined'){
-          console.log(rowCords)
-          rowArr.push(rowCords)
-        }
-
+  let colorOfPiece = piece[0];
+  let col = parseInt(String(currentPos)[0])
+  let row = parseInt(String(currentPos)[1])
+  let moveCol = parseInt(String(pos)[0])
+  let moveRow = parseInt(String(pos)[1])
+  let colArr = []
+  let rowArr = []
+  for(let i=8; i>=1; i--){
+    let rowCords = `${col}${i}`;//parseInt(String(col)+String(i));
+    let colCords = `${i}${row}`;
+    let pieceOnColCords = place.value[ parseInt( posInArr[colCords] ) ].classList[3];
+    let pieceOnRowCords = place.value[ parseInt( posInArr[rowCords] ) ].classList[3];
+    
+    if(parseInt(colCords) !== parseInt(currentPos)){
+      if(typeof(pieceOnColCords) === 'undefined'){
+        // console.log("con1 ",colCords)
+        colArr.push(colCords)
       }
-    }else{
-      for(let i=8;i>=1; i--){
-        let colCords = parseInt(String(row)+String(i));
-        let rowCords = parseInt(String(i)+String(col));
-        // console.log(place.value[ parseInt( posInArr[colCords] ) ])
-        if(typeof(place.value[ parseInt( posInArr[colCords] ) ].classList[3]) === 'undefined'){
-          console.log(colCords)
-          colArr.push(String(row)+String(i))
+      else if(typeof(pieceOnColCords) !== 'undefined'){
+        if(pieceOnColCords[0] !== colorOfPiece){
+          colArr.push(colCords)
         }
-        
-        if(typeof(place.value[ parseInt( posInArr[rowCords] ) ].classList[3]) === 'undefined'){
-          console.log(rowCords)
-          rowArr.push(rowCords)
-        }
-        
       }
     }
-    console.log(colArr,rowArr)
+   
+    if(parseInt(rowCords) !== parseInt(currentPos)){
+      if(typeof(pieceOnRowCords) === 'undefined'){
+        rowArr.push(rowCords)
+      }
+      else if(typeof(pieceOnRowCords) !== 'undefined'){
+        if(pieceOnRowCords[0] !== colorOfPiece) 
+          rowArr.push(rowCords)
+      }
+    }
   }
 
+  // if(col == moveCol){
+  //   console.log("move along vertical",rowArr)
+  // }else{
+  //   console.log("move along horizontal",colArr)
+
+  // }
+      
+
+   console.log(colArr.concat(rowArr))
+ }
+
+ function getAvailableMoves(currentPos, pos, piece){
+  let colorOfPiece = piece[0];
+  let col = parseInt(String(currentPos)[0])
+  let row = parseInt(String(currentPos)[1])
+  let moveCol = parseInt(String(pos)[0])
+  let moveRow = parseInt(String(pos)[1])
+}
+  const castleMove = (currentPos, pos, selectedPiece) =>{
+    let returnValue = true
+    console.log("castle",currentPos)
+    
+    getAvailableMoves2(currentPos, pos, selectedPiece)
+    return returnValue
+  }
+
+  const getPositionOfAllPieces=()=>{
+    for(let i=1; i<=8; i++){
+      for(let j=1; j<=8; j++){
+        let cords = `${i}${j}`;
+        if(typeof(place.value[ parseInt( posInArr[cords] ) ].classList[3]) !== 'undefined'){
+          currentPos[String(`${i}${j}`)] = place.value[ parseInt( posInArr[cords] ) ].classList[3];
+        }else
+          currentPos[String(`${i}${j}`)] = "";
+
+      }
+    }
+    console.log(currentPos,posInArr)
+  }
   const movePiece = (e, pos)=>{
     let validMove = true;
-    console.log(e.target.className,countSteps)
     let identifyPiece = e.target.classList[3]
-
-    if( countSteps == 0 && identifyPiece == 'undefined')
+    if( countSteps == 0 && typeof(identifyPiece) === 'undefined')
       return 
 
     countSteps++
     if(countSteps ==1 ){
       currentEvent = e
+      getPositionOfAllPieces()
+      e.target.classList.add('selected')
       currentPos = pos
       selectedPiece = identifyPiece
-      console.log("selected piece", pos)
     }
 
     if(countSteps == 2 && currentEvent !== null){
-      if(currentPos == pos)
+      if(currentPos == pos){
         validMove = false
-
-      if(identifyPiece !== undefined && selectedPiece[0] === identifyPiece[0]) //cant remove own side pieces
+        countSteps = 0
+        currentEvent.target.classList.remove('selected')
+        return
+      }
+      
+      if(typeof(identifyPiece) !== 'undefined' && selectedPiece[0] === identifyPiece[0]){ //cant remove own side pieces
+        countSteps = 0
         validMove = false
+        currentEvent.target.classList.remove('selected')
+        return
+      }
 
       // Inital moves of pawn
       if(['wp','bp'].includes(selectedPiece)){
@@ -103,12 +148,13 @@
       }
 
       if(validMove){
-        console.log(e.target,identifyPiece,selectedPiece,currentEvent.target)
-        if(identifyPiece !== undefined) // piece udavtoy tar
+        if(typeof(identifyPiece) !== undefined){ // piece udavtoy tar
           e.target.classList.remove(identifyPiece)
+        }
         currentEvent.target.classList.remove(selectedPiece)
         e.target.classList.add(selectedPiece)
       }
+      currentEvent.target.classList.remove('selected')
       countSteps=0
     }
   }
@@ -172,7 +218,9 @@
         </div>
       </div>
     </div>
+    <div :class="[(place[String(11)])]">
 
+    </div>
   </div>
 
 </template>
@@ -191,7 +239,10 @@
   .even{
     background-color: grey;
   }
-
+  .selected{
+    background-color: #ff7979;
+    background-blend-mode: hard-light;
+  }
   .bq{
     background-image:url(./assets/bq.png);
     background-size: 100%;
